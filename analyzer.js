@@ -1,5 +1,6 @@
 'use strict';
 
+const Promise = require('bluebird');
 const Git = require('nodegit');
 const path = require('path');
 const fs = require('fs');
@@ -23,6 +24,25 @@ const thru = f => x => { f(x); return x; };
 
 const repoPath = path.resolve(__dirname, './repo');
 
+const dateCrashFixed = [];
+const processCommit = commit => {
+  console.log('At ' + commit.date().toString() + ' : ' + commit.sha() + ' => ' + commit.summary());
+  const nullEntry = { getTree: () => ({ entryCount: () => 0  })  };
+  const sum = arr => arr.reduce((acc, v) => acc + v, 0);
+
+  let countFiles = folders => Promise.map(folders, type =>
+    commit.getEntry(type)
+    .catch(err => nullEntry)
+    .then(entry => entry.getTree())
+    .then(tree => tree.entryCount()))
+  .then(v => sum(v));
+
+  return countFiles(['crashes-fuzzing', 'crashes-memory-corruption', 'crashes'])
+  .then(numCrash => countFiles(['fixed'])
+    .then(numFixed => dateCrashFixed.push([commit.date(), numCrash, numFixed])))
+  .catch(err => console.log(err));
+};
+
 let getRepo;
 if (isDirectory(repoPath)) {
   // Update it
@@ -45,14 +65,15 @@ if (isDirectory(repoPath)) {
   getRepo = () => Git.Clone('https://github.com/practicalswift/swift-compiler-crashes', repoPath);
 }
 
+const countOperations = [];
 getRepo()
 .then(thru(() => console.log('Cloned repo')))
 .then(repo => repo.getMasterCommit())
 .then(thru(() => console.log('Retrieved master commit')))
-.then(commit => commit.history())
+.then(commit => commit.history(Git.Revwalk.SORT.Time))
 .then(thru(emitter =>
   emitter.on('commit', commit => {
-    console.log('At ' + commit.date().toString() + ' : ' + commit.sha() + ' => ' + commit.summary());
+    countOperations.push(processCommit(commit));
     if (isInitialCommit(commit.sha())) {
       emitter.emit('end');  // we're done
     }
@@ -66,6 +87,11 @@ getRepo()
   emitter.on('error', reject);
   emitter.start();
 }))
-.then(() => console.log('Done'))
+.then(() => console.log('Waiting for count'))
+.then(() => Promise.all(countOperations))
+.then(() => {
+  dateCrashFixed.sort((a, b) => a[0] - b[0]);
+  console.log(dateCrashFixed);
+})
 .catch(err => console.log(err));
 

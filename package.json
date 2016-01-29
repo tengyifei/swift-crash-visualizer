@@ -1,0 +1,23 @@
+{
+  "name": "swift-crash-visualizer",
+  "version": "1.0.0",
+  "description": "Let's you witness the progress of Swift compiler over time.",
+  "main": "analyzer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tengyifei/swift-crash-visualizer.git"
+  },
+  "author": "Yifei Teng <tengyifei88@gmail.com> (https://thinkingandcomputing.com/)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tengyifei/swift-crash-visualizer/issues"
+  },
+  "homepage": "https://github.com/tengyifei/swift-crash-visualizer#readme",
+  "dependencies": {
+    "bluebird": "^3.1.5",
+    "nodegit": "^0.9.0"
+  }
+}
