@@ -4,7 +4,9 @@ const Promise = require('bluebird');
 const Git = require('nodegit');
 const path = require('path');
 const fs = require('fs');
+const moment = require('moment');
 const isInitialCommit = id => id === '4ce864afb1d319e8bc7fb7c7f47c39208801b2a4';
+const startDate = new Date(1443657600 * 1000);  // Oct 1st 2015
 let isDirectory = path => {
   try {
     // Query the entry
@@ -26,7 +28,7 @@ const repoPath = path.resolve(__dirname, './repo');
 
 const dateCrashFixed = [];
 const processCommit = commit => {
-  console.log('At ' + commit.date().toString() + ' : ' + commit.sha() + ' => ' + commit.summary());
+  // console.log('At ' + commit.date().toString() + ' : ' + commit.sha() + ' => ' + commit.summary());
   const nullEntry = { getTree: () => ({ entryCount: () => 0  })  };
   const sum = arr => arr.reduce((acc, v) => acc + v, 0);
 
@@ -91,7 +93,10 @@ getRepo()
 .then(() => Promise.all(countOperations))
 .then(() => {
   dateCrashFixed.sort((a, b) => a[0] - b[0]);
-  console.log(dateCrashFixed);
+  console.log('Date, Crashes, Fixed');
+  dateCrashFixed
+  .filter(x => x[0] > startDate)
+  .forEach(x => console.log(`${ moment(x[0]).format() }, ${x[1]}, ${x[2]},`));
 })
 .catch(err => console.log(err));
 
