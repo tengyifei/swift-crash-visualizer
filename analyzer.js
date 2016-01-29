@@ -13,12 +13,9 @@ let isDirectory = path => {
     let stats = fs.lstatSync(path);
 
     // Is it a directory?
-    if (stats.isDirectory()) {
-      return true;
-    }
-    return false;
+    return stats.isDirectory();
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return false;
   }
 };
@@ -28,7 +25,7 @@ const repoPath = path.resolve(__dirname, './repo');
 
 const dateCrashFixed = [];
 const processCommit = commit => {
-  // console.log('At ' + commit.date().toString() + ' : ' + commit.sha() + ' => ' + commit.summary());
+  // console.error('At ' + commit.date().toString() + ' : ' + commit.sha() + ' => ' + commit.summary());
   const nullEntry = { getTree: () => ({ entryCount: () => 0  })  };
   const sum = arr => arr.reduce((acc, v) => acc + v, 0);
 
@@ -50,14 +47,8 @@ if (isDirectory(repoPath)) {
   // Update it
   getRepo = () => Git.Repository.open(repoPath)
   .then(repo => {
-    console.log('Update repository');
-    return repo.fetchAll({
-      callbacks: {
-        certificateCheck: function() {
-          return 1;
-        }
-      }
-    })
+    console.error('Update repository');
+    return repo.fetchAll({ callbacks: { certificateCheck: () => 1 } })
     .then(() => repo);
   })
   // Now that we're finished fetching, go ahead and merge our local branch
@@ -69,9 +60,9 @@ if (isDirectory(repoPath)) {
 
 const countOperations = [];
 getRepo()
-.then(thru(() => console.log('Cloned repo')))
+.then(thru(() => console.error('Cloned repo')))
 .then(repo => repo.getMasterCommit())
-.then(thru(() => console.log('Retrieved master commit')))
+.then(thru(() => console.error('Retrieved master commit')))
 .then(commit => commit.history(Git.Revwalk.SORT.Time))
 .then(thru(emitter =>
   emitter.on('commit', commit => {
@@ -89,7 +80,7 @@ getRepo()
   emitter.on('error', reject);
   emitter.start();
 }))
-.then(() => console.log('Waiting for count'))
+.then(() => console.error('Waiting for count'))
 .then(() => Promise.all(countOperations))
 .then(() => {
   dateCrashFixed.sort((a, b) => a[0] - b[0]);
@@ -97,6 +88,8 @@ getRepo()
   dateCrashFixed
   .filter(x => x[0] > startDate)
   .forEach(x => console.log(`${ moment(x[0]).format() }, ${x[1]}, ${x[2]},`));
+
+  process.exit(0);
 })
-.catch(err => console.log(err));
+.catch(err => console.error(err));
 
